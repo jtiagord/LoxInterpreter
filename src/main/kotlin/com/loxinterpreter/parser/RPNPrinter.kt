@@ -27,6 +27,10 @@ class RPNPrinter : Expr.Visitor<String> {
         return expr.right.accept(this) + " " + operator
     }
 
+    override fun visitTernary(expr: Expr.Ternary): String {
+        TODO("Not yet implemented")
+    }
+
 
     fun print(expr : Expr) : String = expr.accept(this)
 }

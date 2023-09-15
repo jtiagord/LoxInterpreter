@@ -1,5 +1,3 @@
-package com.loxinterpreter.astgenerator
-
 import java.io.PrintWriter
 import kotlin.system.exitProcess
 
@@ -11,12 +9,15 @@ fun main(args : Array<String>) {
 
     val outputDir = args[0]
 
-    defineAst(outputDir, "Expr", listOf(
-        "Binary   : Expr left, Token operator, Expr right",
-        "Grouping : Expr expression",
-        "Literal  : Any? value",
-        "Unary    : Token operator, Expr right"
-    ))
+    defineAst(
+        outputDir, "Expr", listOf(
+            "Binary   : Expr left, Token operator, Expr right",
+            "Grouping : Expr expression",
+            "Literal  : Any? value",
+            "Unary    : Token operator, Expr right",
+            "Ternary  : Expr condition, Expr thenBranch , Expr elseBranch"
+        )
+    )
 }
 
 fun defineAst(outputDir: String, baseName: String, types : List<String>) {
@@ -33,7 +34,7 @@ fun defineAst(outputDir: String, baseName: String, types : List<String>) {
     for( type in types ) {
         val (className, fields) = type.split(":").map(String::trim)
         writer.print("\t")
-        defineType(writer , baseName , className, fields)
+        defineType(writer, baseName, className, fields)
         writer.println()
     }
     writer.println("}")

@@ -8,6 +8,7 @@ abstract class Expr {
 		fun visitGrouping(expr: Grouping) : R
 		fun visitLiteral(expr: Literal) : R
 		fun visitUnary(expr: Unary) : R
+		fun visitTernary(expr: Ternary) : R
 	}
 	abstract fun <R> accept(visitor : Visitor<R>) : R
 
@@ -19,12 +20,16 @@ abstract class Expr {
 		override fun <R> accept(visitor : Visitor<R>) : R = visitor.visitGrouping(this)
 	}
 
-	class Literal(val value : Any?,) : Expr() {
+	class Literal(val value : Any?, ) : Expr() {
 		override fun <R> accept(visitor : Visitor<R>) : R = visitor.visitLiteral(this)
 	}
 
 	class Unary(val operator : Token, val right : Expr, ) : Expr() {
 		override fun <R> accept(visitor : Visitor<R>) : R = visitor.visitUnary(this)
+	}
+
+	class Ternary(val condition : Expr, val thenBranch : Expr, val elseBranch : Expr, ) : Expr() {
+		override fun <R> accept(visitor : Visitor<R>) : R = visitor.visitTernary(this)
 	}
 
 }

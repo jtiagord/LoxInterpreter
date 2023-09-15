@@ -33,8 +33,16 @@ class Parser(private val tokens : List<Token>){
     }
 
     private fun ternary() : Expr {
-        return equality()
+        var expr = equality()
 
+        if((match(QUESTION))){
+            val second = equality()
+            consume(COLON, "Expected \":\" for ternary operator")
+            val third = equality()
+            expr = Expr.Ternary(expr, second, third)
+        }
+
+        return expr
     }
 
     private fun equality() : Expr {
@@ -95,7 +103,7 @@ class Parser(private val tokens : List<Token>){
     }
 
     private fun consume(token : TokenType, errorMessage : String) : Token {
-        if(match(token)) return advance()
+        if(match(token)) return peek()
 
         error(peek(), errorMessage)
         throw ParseError()
