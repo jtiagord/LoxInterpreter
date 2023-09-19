@@ -18,6 +18,12 @@ fun main(args : Array<String>) {
             "Ternary  : Expr condition, Expr thenBranch , Expr elseBranch"
         )
     )
+
+    defineAst(outputDir, "Stmt", listOf(
+            "Expression : Expr expression",
+            "Print      : Expr expression"
+        )
+    )
 }
 
 fun defineAst(outputDir: String, baseName: String, types : List<String>) {
