@@ -59,8 +59,7 @@ fun run(input : String){
 
     if(hadError) return
 
-    println(AstPrinter().print(expression!!))
-    interpreter.interpret(expression!!)
+    interpreter.interpret(expression)
 }
 
 

@@ -9,3 +9,17 @@ unary          → ( "!" | "-" ) unary
                | primary ;
 primary        → NUMBER | STRING | "true" | "false" | "nil"
                | "(" expression ")" ;
+
+------------------------------//------------------------------------
+program        → declaration* EOF ;
+
+declaration    → varDecl
+              | statement ;
+
+statement      → exprStmt
+              | printStmt ;
+
+exprStmt       → expression ";" ;
+printStmt      → "print" expression ";" ;
+
+varDecl        → "var" IDENTIFIER ( "=" expression )? ";" ;

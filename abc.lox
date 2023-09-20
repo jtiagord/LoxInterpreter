@@ -1,4 +1,7 @@
 /* dajfhjfads
 asna  /
 dfafadljfda */
-"abc" ? "a" : "b"
+print "abc" ? "a" : "b";
+print "one";
+print true;
+print 2 + 1;

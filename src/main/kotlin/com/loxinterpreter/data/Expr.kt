@@ -9,6 +9,7 @@ abstract class Expr {
 		fun visitLiteral(expr: Literal) : R
 		fun visitUnary(expr: Unary) : R
 		fun visitTernary(expr: Ternary) : R
+		fun visitVariable(expr: Variable) : R
 	}
 	abstract fun <R> accept(visitor : Visitor<R>) : R
 
@@ -30,6 +31,10 @@ abstract class Expr {
 
 	class Ternary(val condition : Expr, val thenBranch : Expr, val elseBranch : Expr, ) : Expr() {
 		override fun <R> accept(visitor : Visitor<R>) : R = visitor.visitTernary(this)
+	}
+
+	class Variable(val name : Token, ) : Expr() {
+		override fun <R> accept(visitor : Visitor<R>) : R = visitor.visitVariable(this)
 	}
 
 }

@@ -2,21 +2,23 @@ package com.loxinterpreter
 
 import com.loxinterpreter.data.Expr
 import com.loxinterpreter.data.RuntimeError.RuntimeError
+import com.loxinterpreter.data.Stmt
 import com.loxinterpreter.data.Token
 import com.loxinterpreter.data.TokenType
 
-class Interpreter : Expr.Visitor<Any?> {
+class Interpreter : Expr.Visitor<Any?>, Stmt.Visitor<Unit> {
 
-    fun interpret(expression : Expr){
-        try{
-            val value = evaluate(expression)
-            println(stringify(value))
+    fun interpret(stmts : List<Stmt>){
+        try {
+            for (stmt in stmts) {
+                execute(stmt)
+            }
         }catch (ex : RuntimeError){
             runtimeError(ex)
         }
     }
 
-
+    private fun execute(stmt : Stmt) = stmt.accept(this)
 
     private fun stringify(value: Any?): String {
         if(value == null) return "nil"
@@ -129,5 +131,22 @@ class Interpreter : Expr.Visitor<Any?> {
         val then = evaluate(expr.thenBranch)
         val other = evaluate(expr.elseBranch)
         return if(isTruthy(condition)) then else other
+    }
+
+    override fun visitVariable(expr: Expr.Variable): Any? {
+        TODO("Not yet implemented")
+    }
+
+    override fun visitExpression(expr: Stmt.Expression) {
+        val value = evaluate(expr.expression)
+    }
+
+    override fun visitPrint(expr : Stmt.Print) {
+        val value = evaluate(expr.expression)
+        println(stringify(value))
+    }
+
+    override fun visitVar(expr: Stmt.Var) {
+        TODO("Not yet implemented")
     }
 }

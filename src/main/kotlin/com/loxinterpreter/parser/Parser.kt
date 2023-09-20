@@ -1,23 +1,63 @@
 package com.loxinterpreter.parser
 
 import com.loxinterpreter.data.Expr
+import com.loxinterpreter.data.Stmt
 import com.loxinterpreter.data.Token
 import com.loxinterpreter.data.TokenType
 import com.loxinterpreter.data.TokenType.*
 import com.loxinterpreter.error
+
 
 class ParseError : RuntimeException()
 
 class Parser(private val tokens : List<Token>){
     private var curr = 0;
 
-    fun parse() : Expr?{
-        return try {
-            expression()
-        } catch (error: ParseError) {
-            null
+    fun parse() : List<Stmt>{
+        val stmts = ArrayList<Stmt>()
+        while(!isAtEnd()){
+            val stmt = declaration()?:continue
+            stmts.add(stmt)
+        }
+
+        return stmts
+    }
+
+    private fun declaration(): Stmt? {
+        try {
+            if (match(VAR)) return varDeclaration();
+
+            return statement();
+        } catch (error : ParseError) {
+            synchronize();
+            return null;
         }
     }
+
+    private fun varDeclaration() : Stmt{
+        val name = consume(IDENTIFIER, "Expected variable name")
+        val value = if(match(EQUAL)) expression() else null
+        consume(SEMICOLON , "Expected ';'")
+        return Stmt.Var(name,value)
+    }
+
+    private fun statement(): Stmt =
+        if(match(PRINT)) printStatement()
+        else expressionStatement()
+
+    private fun expressionStatement(): Stmt {
+        val value = expression()
+        consume(SEMICOLON , "Expected ';'")
+        return Stmt.Expression(value)
+    }
+
+    private fun printStatement(): Stmt {
+        val value = expression()
+        consume(SEMICOLON , "Expected ';'")
+        return Stmt.Print(value)
+    }
+
+
     private fun expression() : Expr = comma();
 
     private fun comma() : Expr {
@@ -120,6 +160,7 @@ class Parser(private val tokens : List<Token>){
         if(match(TRUE)){ return Expr.Literal(true) }
         if(match(NIL)){ return Expr.Literal(null) }
         if(match(NUMBER, STRING)){ return Expr.Literal(previous().literal) }
+        if(match(IDENTIFIER)) { return Expr.Variable(previous()) }
 
         error(peek(), "Invalid value")
         throw ParseError()
