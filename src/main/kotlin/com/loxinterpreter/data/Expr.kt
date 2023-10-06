@@ -1,20 +1,32 @@
 package com.loxinterpreter.data
 
-import java.util.List
-
 abstract class Expr {
 	interface Visitor<R> {
+		fun visitAssign(expr: Assign) : R
 		fun visitBinary(expr: Binary) : R
+		fun visitLogical(expr: Logical) : R
 		fun visitGrouping(expr: Grouping) : R
 		fun visitLiteral(expr: Literal) : R
 		fun visitUnary(expr: Unary) : R
 		fun visitTernary(expr: Ternary) : R
 		fun visitVariable(expr: Variable) : R
+		fun visitFunction(expr: Function) : R
+		fun visitGet(expr: Get) : R
+		fun visitSet(expr: Set) : R
+		fun visitCall(expr: Call) : R
 	}
 	abstract fun <R> accept(visitor : Visitor<R>) : R
 
+	class Assign(val name : Token, val value : Expr, ) : Expr() {
+		override fun <R> accept(visitor : Visitor<R>) : R = visitor.visitAssign(this)
+	}
+
 	class Binary(val left : Expr, val operator : Token, val right : Expr, ) : Expr() {
 		override fun <R> accept(visitor : Visitor<R>) : R = visitor.visitBinary(this)
+	}
+
+	class Logical(val left : Expr, val operator : Token, val right : Expr, ) : Expr() {
+		override fun <R> accept(visitor : Visitor<R>) : R = visitor.visitLogical(this)
 	}
 
 	class Grouping(val expression : Expr, ) : Expr() {
@@ -35,6 +47,22 @@ abstract class Expr {
 
 	class Variable(val name : Token, ) : Expr() {
 		override fun <R> accept(visitor : Visitor<R>) : R = visitor.visitVariable(this)
+	}
+
+	class Function(val params : List<Token>, val body : List<Stmt>, ) : Expr() {
+		override fun <R> accept(visitor : Visitor<R>) : R = visitor.visitFunction(this)
+	}
+
+	class Get(val obj : Expr, val name : Token, ) : Expr() {
+		override fun <R> accept(visitor : Visitor<R>) : R = visitor.visitGet(this)
+	}
+
+	class Set(val obj : Expr, val name : Token, val value : Expr, ) : Expr() {
+		override fun <R> accept(visitor : Visitor<R>) : R = visitor.visitSet(this)
+	}
+
+	class Call(val callee : Expr, val paren : Token, val arguments : List<Expr>, ) : Expr() {
+		override fun <R> accept(visitor : Visitor<R>) : R = visitor.visitCall(this)
 	}
 
 }

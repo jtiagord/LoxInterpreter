@@ -5,8 +5,16 @@ import com.loxinterpreter.data.Token
 import com.loxinterpreter.data.TokenType
 
 class AstPrinter : Expr.Visitor<String> {
+    override fun visitAssign(expr: Expr.Assign): String {
+        TODO("Not yet implemented")
+    }
+
     override fun visitBinary(expr: Expr.Binary): String =
         parenthesize(expr.operator.lexeme, expr.left, expr.right)
+
+    override fun visitLogical(expr: Expr.Logical): String {
+        TODO("Not yet implemented")
+    }
 
 
     override fun visitGrouping(expr: Expr.Grouping): String =
@@ -22,6 +30,23 @@ class AstPrinter : Expr.Visitor<String> {
 
     override fun visitTernary(expr: Expr.Ternary): String =
         parenthesize("?:", expr.condition, expr.thenBranch, expr.elseBranch)
+
+    override fun visitVariable(expr: Expr.Variable): String = "var ${expr.name.lexeme}"
+    override fun visitFunction(expr: Expr.Function): String {
+        TODO("Not yet implemented")
+    }
+
+    override fun visitGet(expr: Expr.Get): String {
+        TODO("Not yet implemented")
+    }
+
+    override fun visitSet(expr: Expr.Set): String {
+        TODO("Not yet implemented")
+    }
+
+    override fun visitCall(expr: Expr.Call): String {
+        TODO("Not yet implemented")
+    }
 
     private fun parenthesize(name : String, vararg exprs : Expr) : String{
         val builder = StringBuilder()

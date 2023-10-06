@@ -1,6 +1,5 @@
-package com.loxinterpreter.data.RuntimeError
+package com.loxinterpreter.data
 
-import com.loxinterpreter.data.Token
 import java.lang.RuntimeException
 
 class RuntimeError(val token : Token, message : String) : RuntimeException(message)

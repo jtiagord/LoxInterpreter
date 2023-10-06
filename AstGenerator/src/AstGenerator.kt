@@ -11,18 +11,32 @@ fun main(args : Array<String>) {
 
     defineAst(
         outputDir, "Expr", listOf(
+            "Assign   : Token name , Expr value",
             "Binary   : Expr left, Token operator, Expr right",
+            "Logical  : Expr left, Token operator, Expr right",
             "Grouping : Expr expression",
             "Literal  : Any? value",
             "Unary    : Token operator, Expr right",
             "Ternary  : Expr condition, Expr thenBranch , Expr elseBranch",
-            "Variable : Token name"
+            "Variable : Token name",
+            "Function : List<Token> params, List<Stmt> body",
+            "Get      : Expr obj, Token name",
+            "Set      : Expr obj, Token name, Expr value",
+            "Call     : Expr callee, Token paren, List<Expr> arguments",
         )
     )
 
     defineAst(outputDir, "Stmt", listOf(
+            "Block      : List<Stmt> statements",
+            "If         : Expr condition, Stmt thenBranch, Stmt? elseBranch",
+            "Function   : Token name, Expr.Function expr",
+            "Return     : Token keyword, Expr? value",
+            "Break      :",
+            "While      : Expr condition, Stmt loop",
             "Expression : Expr expression",
             "Print      : Expr expression",
+            "PrintLn    : Expr? expression",
+            "Class      : Token name, List<Stmt.Function> methods",
             "Var        : Token name, Expr? initializer"
         )
     )
@@ -32,8 +46,6 @@ fun defineAst(outputDir: String, baseName: String, types : List<String>) {
     val writer = PrintWriter("$outputDir/$baseName.kt")
 
     writer.println("package com.loxinterpreter.data")
-    writer.println()
-    writer.println("import java.util.List")
     writer.println()
     writer.println("abstract class $baseName {")
 
@@ -55,7 +67,7 @@ fun defineVisitor(writer: PrintWriter, baseName: String, types: List<String>) {
     for(type in types){
         val typeName = type.split(":")[0].trim()
 
-        writer.println("\t\tfun visit$typeName(expr: $typeName) : R")
+        writer.println("\t\tfun visit$typeName(${baseName.lowercase()}: $typeName) : R")
     }
     writer.println("\t}")
 
@@ -70,7 +82,7 @@ fun defineType(writer: PrintWriter, baseClass : String, className: String, field
     /*{
 		override fun <R> accept(visitor : Visitor<R>) : R = visitor.visitBinary(this)
 	}*/
-    fields.split(",").forEach { field ->
+    if(fields.isNotEmpty()) fields.split(",").forEach { field ->
         val trimmedField = field.trim()
         val (type ,name) = trimmedField.split("\\s+".toRegex())
         writer.print("val $name : $type, ")

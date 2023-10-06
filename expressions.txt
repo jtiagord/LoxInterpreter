@@ -13,8 +13,12 @@ primary        → NUMBER | STRING | "true" | "false" | "nil"
 ------------------------------//------------------------------------
 program        → declaration* EOF ;
 
-declaration    → varDecl
-              | statement ;
+declaration    → classDecl
+               | funDecl
+               | varDecl
+               | statement ;
+
+classDecl      → "class" IDENTIFIER "{" function* "}" ;
 
 statement      → exprStmt
               | printStmt ;
@@ -23,3 +27,6 @@ exprStmt       → expression ";" ;
 printStmt      → "print" expression ";" ;
 
 varDecl        → "var" IDENTIFIER ( "=" expression )? ";" ;
+
+function       → IDENTIFIER "(" parameters? ")" block ;
+parameters     → IDENTIFIER ( "," IDENTIFIER )* ;

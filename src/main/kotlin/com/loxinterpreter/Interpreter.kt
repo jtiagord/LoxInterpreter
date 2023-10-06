@@ -1,12 +1,31 @@
 package com.loxinterpreter
 
-import com.loxinterpreter.data.Expr
-import com.loxinterpreter.data.RuntimeError.RuntimeError
-import com.loxinterpreter.data.Stmt
-import com.loxinterpreter.data.Token
-import com.loxinterpreter.data.TokenType
+import com.loxinterpreter.data.*
+
+
+interface LoxCallable {
+    val arity : Int
+    fun call(interpreter: Interpreter, arguments: List<Any?>): Any?
+}
+class BreakException : Exception()
+
+class Return(val value : Any?) : RuntimeException(null, null, false, false)
 
 class Interpreter : Expr.Visitor<Any?>, Stmt.Visitor<Unit> {
+    private var global = Environment()
+    private val locals: MutableMap<Expr, Int> = HashMap()
+    private var currEnv = global
+
+    init {
+        val function = object  : LoxCallable{
+            override val arity = 0
+            override fun call(interpreter: Interpreter, arguments: List<Any?>): Any
+                = (System.currentTimeMillis() / 1000.0)
+
+            override fun toString(): String = "<native fn>";
+        }
+        global.define("clock", function)
+    }
 
     fun interpret(stmts : List<Stmt>){
         try {
@@ -15,6 +34,18 @@ class Interpreter : Expr.Visitor<Any?>, Stmt.Visitor<Unit> {
             }
         }catch (ex : RuntimeError){
             runtimeError(ex)
+        }
+    }
+
+    fun executeBlock(stmts: List<Stmt>, env: Environment){
+        val previous: Environment = this.currEnv
+        try {
+            this.currEnv = env
+            for (statement in stmts) {
+                execute(statement)
+            }
+        } finally {
+            this.currEnv = previous
         }
     }
 
@@ -33,6 +64,45 @@ class Interpreter : Expr.Visitor<Any?>, Stmt.Visitor<Unit> {
 
         return value.toString()
     }
+
+    override fun visitBlock(stmt: Stmt.Block) {
+        executeBlock(stmt.statements, Environment(currEnv))
+    }
+
+    override fun visitIf(stmt: Stmt.If) {
+        val condition = evaluate(stmt.condition)
+
+        if(isTruthy(condition)) execute(stmt.thenBranch)
+        else if(stmt.elseBranch != null) execute(stmt.elseBranch)
+    }
+
+    override fun visitFunction(stmt: Stmt.Function) {
+        val function = LoxFunction(stmt.expr, currEnv, stmt.name)
+        currEnv.define(stmt.name.lexeme, function)
+    }
+
+    override fun visitReturn(stmt: Stmt.Return) {
+        val value: Any? = if (stmt.value != null) evaluate(stmt.value) else null
+
+        throw Return(value)
+    }
+
+    override fun visitBreak(stmt: Stmt.Break) {
+        throw BreakException()
+    }
+
+    override fun visitWhile(stmt: Stmt.While) {
+        try {
+            while (isTruthy(evaluate(stmt.condition))) execute(stmt.loop)
+        }catch (_: BreakException){}
+    }
+
+    override fun visitAssign(expr: Expr.Assign): Any? {
+        val value = evaluate(expr.value)
+        currEnv.assign(expr.name, value)
+        return value
+    }
+
 
     override fun visitBinary(expr: Expr.Binary): Any? {
         val right = evaluate(expr.right)
@@ -80,10 +150,23 @@ class Interpreter : Expr.Visitor<Any?>, Stmt.Visitor<Unit> {
             }
             TokenType.BANG_EQUAL -> return !isEqual(left, right);
             TokenType.EQUAL_EQUAL -> return isEqual(left, right);
+            TokenType.COMMA -> return right
             else -> {
                 null
             }
         }
+    }
+
+    override fun visitLogical(expr: Expr.Logical): Any? {
+        val left = evaluate(expr.left)
+
+        if (expr.operator.type === TokenType.OR) {
+            if (isTruthy(left)) return left
+        } else {
+            if (!isTruthy(left)) return left
+        }
+
+        return evaluate(expr.right)
     }
 
     private fun isEqual(left: Any?, right: Any?): Boolean {
@@ -128,25 +211,88 @@ class Interpreter : Expr.Visitor<Any?>, Stmt.Visitor<Unit> {
 
     override fun visitTernary(expr: Expr.Ternary): Any? {
         val condition = evaluate(expr.condition)
-        val then = evaluate(expr.thenBranch)
-        val other = evaluate(expr.elseBranch)
-        return if(isTruthy(condition)) then else other
+        return if(isTruthy(condition)) evaluate(expr.thenBranch) else evaluate(expr.elseBranch)
     }
 
-    override fun visitVariable(expr: Expr.Variable): Any? {
-        TODO("Not yet implemented")
+    override fun visitVariable(expr: Expr.Variable): Any?
+        = lookUpVariable(expr.name, expr);
+
+    private fun lookUpVariable(name: Token, expr: Expr.Variable): Any? {
+        val distance = locals[expr]
+
+        return if(distance != null) currEnv.getAt(distance ,name)
+                else global.get(name)
+
     }
 
-    override fun visitExpression(expr: Stmt.Expression) {
-        val value = evaluate(expr.expression)
+    override fun visitFunction(expr: Expr.Function): Any {
+        return LoxFunction(expr, currEnv)
     }
 
-    override fun visitPrint(expr : Stmt.Print) {
-        val value = evaluate(expr.expression)
-        println(stringify(value))
+    override fun visitGet(expr: Expr.Get): Any? {
+        val obj = evaluate(expr.obj)
+
+        if(obj is LoxInstance){
+            return obj.get(expr.name)
+        }
+
+        throw RuntimeError(expr.name, "Only instances have properties.")
     }
 
-    override fun visitVar(expr: Stmt.Var) {
-        TODO("Not yet implemented")
+    override fun visitSet(expr: Expr.Set): Any? {
+        val obj = evaluate(expr.obj)
+
+        if(obj is LoxInstance){
+            return obj.set(expr.name, evaluate(expr.value))
+        }
+
+        throw RuntimeError(expr.name, "Only instances have properties.")
+    }
+
+    override fun visitCall(expr: Expr.Call): Any? {
+        val callee = evaluate(expr.callee)
+        val arguments: MutableList<Any?> = ArrayList()
+
+        for (argument in expr.arguments) {
+            arguments.add(evaluate(argument))
+        }
+
+        if(callee !is LoxCallable)
+            throw RuntimeError(expr.paren,"Can only functions call functions and classes")
+
+        if(arguments.size != callee.arity){
+            throw RuntimeError(expr.paren,
+                "Expected ${callee.arity} arguments but got ${arguments.size}")
+        }
+
+        return callee.call(this, arguments)
+    }
+
+    override fun visitExpression(stmt: Stmt.Expression) {
+        evaluate(stmt.expression)
+    }
+
+    override fun visitPrint(stmt : Stmt.Print) {
+        val value = evaluate(stmt.expression)
+        print(stringify(value))
+    }
+
+    override fun visitPrintLn(stmt: Stmt.PrintLn) {
+        if(stmt.expression == null) println()
+        else println(stringify(evaluate(stmt.expression)))
+    }
+
+    override fun visitClass(stmt: Stmt.Class) {
+        val klass = LoxClass(stmt.name.lexeme)
+        currEnv.define(stmt.name.lexeme, klass)
+    }
+
+    override fun visitVar(stmt: Stmt.Var) {
+        val value = if(stmt.initializer == null) null else evaluate(stmt.initializer)
+        currEnv.define(stmt.name.lexeme, value)
+    }
+
+    fun resolve(expr: Expr, depth: Int) {
+        locals[expr] = depth
     }
 }

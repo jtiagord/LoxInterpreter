@@ -24,12 +24,14 @@ class Scanner(private val source: String) {
             put("nil", NIL);
             put("or", OR);
             put("print", PRINT);
+            put("println", PRINTLN);
             put("return", RETURN);
             put("super", SUPER);
             put("this", THIS);
             put("true", TRUE);
             put("var", VAR);
             put("while", WHILE);
+            put("break", BREAK);
         }
     }
 
@@ -48,20 +50,19 @@ class Scanner(private val source: String) {
 
 
     private fun scanToken() {
-        val currChar = advance()
-        when (currChar){
+        when (val currChar = advance()){
             '(' -> addToken(LEFT_PAREN)
             ')' -> addToken(RIGHT_PAREN)
             '{' -> addToken(LEFT_BRACE)
             '}' -> addToken(RIGHT_BRACE)
             ',' -> addToken(COMMA)
             '.' -> addToken(DOT)
-            '-' -> addToken(MINUS)
             '+' -> addToken(PLUS)
             ';' -> addToken(SEMICOLON)
             '*' -> addToken(STAR)
             '?' -> addToken(QUESTION)
             ':' -> addToken(COLON)
+            '-' -> if(match('>')) addToken(ARROW) else addToken(MINUS)
             '!' -> if(match('=')) addToken(BANG_EQUAL) else addToken(BANG)
             '=' -> if(match('=')) addToken(EQUAL_EQUAL) else addToken(EQUAL)
             '>' -> if(match('=')) addToken(GREATER_EQUAL) else addToken(GREATER)
@@ -130,19 +131,37 @@ class Scanner(private val source: String) {
     private fun isDigit(ch : Char): Boolean = ch in '0' .. '9'
 
     private fun string() {
+        val string = StringBuilder()
         while(peek() != '"' && !isAtEnd()){
-            if(peek() == '\n') line++
+            var ch = peek()
+            if(peek() == '\n'){
+                error(line, "Unterminated String")
+                return
+            }
+            else if(peek() == '\\'){
+                ch = when(peekNext()){
+                    'n' -> '\n'
+                    't' -> '\t'
+                    '\\' -> '\\'
+                    else -> {
+                        error(line, "Invalid escaping character")
+                        return
+                    }
+                }
+                advance()
+            }
+            string.append(ch)
             advance()
         }
 
         if(isAtEnd()){
-            error(line, "Unterminated String");
+            error(line, "Unterminated String")
+            return
         }
 
         advance()
 
-        val str = source.substring(start + 1 until curr - 1)
-        addToken(STRING,str)
+        addToken(STRING,string.toString())
     }
 
 

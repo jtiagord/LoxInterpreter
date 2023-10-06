@@ -7,8 +7,16 @@ import com.loxinterpreter.data.TokenType
 
 
 class RPNPrinter : Expr.Visitor<String> {
+    override fun visitAssign(expr: Expr.Assign): String {
+        TODO("Not yet implemented")
+    }
+
     override fun visitBinary(expr: Expr.Binary): String
         = "${expr.left.accept(this)} ${expr.right.accept(this)} ${expr.operator.lexeme}"
+
+    override fun visitLogical(expr: Expr.Logical): String {
+        TODO("Not yet implemented")
+    }
 
 
     override fun visitGrouping(expr: Expr.Grouping): String = expr.expression.accept(this)
@@ -28,6 +36,26 @@ class RPNPrinter : Expr.Visitor<String> {
     }
 
     override fun visitTernary(expr: Expr.Ternary): String {
+        TODO("Not yet implemented")
+    }
+
+    override fun visitVariable(expr: Expr.Variable): String {
+        TODO("Not yet implemented")
+    }
+
+    override fun visitFunction(expr: Expr.Function): String {
+        TODO("Not yet implemented")
+    }
+
+    override fun visitGet(expr: Expr.Get): String {
+        TODO("Not yet implemented")
+    }
+
+    override fun visitSet(expr: Expr.Set): String {
+        TODO("Not yet implemented")
+    }
+
+    override fun visitCall(expr: Expr.Call): String {
         TODO("Not yet implemented")
     }
 
