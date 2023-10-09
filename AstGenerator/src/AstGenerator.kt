@@ -21,6 +21,7 @@ fun main(args : Array<String>) {
             "Variable : Token name",
             "Function : List<Token> params, List<Stmt> body",
             "Get      : Expr obj, Token name",
+            "This     : Token keyword",
             "Set      : Expr obj, Token name, Expr value",
             "Call     : Expr callee, Token paren, List<Expr> arguments",
         )

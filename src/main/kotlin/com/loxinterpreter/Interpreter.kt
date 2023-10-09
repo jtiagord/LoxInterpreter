@@ -217,7 +217,7 @@ class Interpreter : Expr.Visitor<Any?>, Stmt.Visitor<Unit> {
     override fun visitVariable(expr: Expr.Variable): Any?
         = lookUpVariable(expr.name, expr);
 
-    private fun lookUpVariable(name: Token, expr: Expr.Variable): Any? {
+    private fun lookUpVariable(name: Token, expr: Expr): Any? {
         val distance = locals[expr]
 
         return if(distance != null) currEnv.getAt(distance ,name)
@@ -237,6 +237,10 @@ class Interpreter : Expr.Visitor<Any?>, Stmt.Visitor<Unit> {
         }
 
         throw RuntimeError(expr.name, "Only instances have properties.")
+    }
+
+    override fun visitThis(expr: Expr.This): Any? {
+        return lookUpVariable(expr.keyword, expr)
     }
 
     override fun visitSet(expr: Expr.Set): Any? {
@@ -283,8 +287,14 @@ class Interpreter : Expr.Visitor<Any?>, Stmt.Visitor<Unit> {
     }
 
     override fun visitClass(stmt: Stmt.Class) {
-        val klass = LoxClass(stmt.name.lexeme)
-        currEnv.define(stmt.name.lexeme, klass)
+        currEnv.define(stmt.name.lexeme, null)
+
+        val hm = HashMap<String, LoxFunction>()
+        for(function in stmt.methods){
+            hm[function.name.lexeme] = LoxFunction(function.expr, currEnv, function.name)
+        }
+        val klass = LoxClass(stmt.name.lexeme, hm)
+        currEnv.assign(stmt.name, klass)
     }
 
     override fun visitVar(stmt: Stmt.Var) {

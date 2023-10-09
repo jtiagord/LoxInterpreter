@@ -7,6 +7,10 @@ import java.lang.IllegalStateException
 import java.util.*
 import kotlin.collections.HashMap
 
+enum class FunctionType{
+    FUNCTION, METHOD , NONE
+}
+
 class Resolver(private val interpreter : Interpreter) : Expr.Visitor<Unit>, Stmt.Visitor<Unit> {
 
     private val scopes = Stack<HashMap<String, Boolean>>()
@@ -70,10 +74,10 @@ class Resolver(private val interpreter : Interpreter) : Expr.Visitor<Unit>, Stmt
         declare(stmt.name)
         define(stmt.name)
 
-        resolveFunction(stmt.expr)
+        resolveFunction(stmt.expr, FunctionType.FUNCTION)
     }
 
-    private fun resolveFunction(expr: Expr.Function) {
+    private fun resolveFunction(expr: Expr.Function, type : FunctionType) {
         beginScope()
         for(param in expr.params){
             declare(param)
@@ -107,8 +111,17 @@ class Resolver(private val interpreter : Interpreter) : Expr.Visitor<Unit>, Stmt
     }
 
     override fun visitClass(stmt: Stmt.Class) {
+        beginScope()
         declare(stmt.name)
+        scopes.peek()["this"] = true
+        for(method in stmt.methods){
+            resolveFunction(method.expr, FunctionType.METHOD)
+        }
+
+        notUsed.peek().remove(stmt.name.lexeme)
+
         define(stmt.name)
+        endScope()
     }
 
     override fun visitVar(stmt: Stmt.Var) {
@@ -180,11 +193,15 @@ class Resolver(private val interpreter : Interpreter) : Expr.Visitor<Unit>, Stmt
     }
 
     override fun visitFunction(expr: Expr.Function) {
-        resolveFunction(expr)
+        resolveFunction(expr,FunctionType.FUNCTION)
     }
 
     override fun visitGet(expr: Expr.Get) {
         resolve(expr.obj)
+    }
+
+    override fun visitThis(expr: Expr.This) {
+        resolveLocal(expr, expr.keyword)
     }
 
     override fun visitSet(expr: Expr.Set) {

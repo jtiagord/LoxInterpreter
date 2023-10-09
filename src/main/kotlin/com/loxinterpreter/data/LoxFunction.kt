@@ -6,7 +6,8 @@ import com.loxinterpreter.LoxCallable
 import com.loxinterpreter.Return
 
 class LoxFunction(private val declaration : Expr.Function, private val closure : Environment, val name : Token? = null)
-                                                                                                        : LoxCallable {
+    : LoxCallable {
+
     override val arity: Int
         get() = declaration.params.size
 
@@ -25,5 +26,10 @@ class LoxFunction(private val declaration : Expr.Function, private val closure :
     }
 
     override fun toString(): String = "<fn ${name?.lexeme?: "anonymous"}>"
+    fun bind(instance : LoxInstance) : LoxFunction{
+        val environment = Environment(closure);
+        environment.define("this", instance);
+        return LoxFunction(declaration, environment, name);
+    }
 
 }

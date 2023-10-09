@@ -381,6 +381,7 @@ class Parser(private val tokens : List<Token>, private val allowExpression : Boo
         if(match(TRUE)){ return Expr.Literal(true) }
         if(match(NIL)){ return Expr.Literal(null) }
         if(match(NUMBER, STRING)){ return Expr.Literal(previous().literal) }
+        if(match(THIS)){ return Expr.This(previous()) }
         if(match(IDENTIFIER)) { return Expr.Variable(previous()) }
 
         error(peek(), "Invalid value")

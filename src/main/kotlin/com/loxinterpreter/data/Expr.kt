@@ -12,6 +12,7 @@ abstract class Expr {
 		fun visitVariable(expr: Variable) : R
 		fun visitFunction(expr: Function) : R
 		fun visitGet(expr: Get) : R
+		fun visitThis(expr: This) : R
 		fun visitSet(expr: Set) : R
 		fun visitCall(expr: Call) : R
 	}
@@ -55,6 +56,10 @@ abstract class Expr {
 
 	class Get(val obj : Expr, val name : Token, ) : Expr() {
 		override fun <R> accept(visitor : Visitor<R>) : R = visitor.visitGet(this)
+	}
+
+	class This(val keyword : Token, ) : Expr() {
+		override fun <R> accept(visitor : Visitor<R>) : R = visitor.visitThis(this)
 	}
 
 	class Set(val obj : Expr, val name : Token, val value : Expr, ) : Expr() {

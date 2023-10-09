@@ -1,9 +1,11 @@
-
-
-fun abc(){
-    println "abc";
+class Bacon {
+  eat() {
+    return ()->{
+               println this.a;
+           };
+  }
 }
 
-
-abc();
-
+var bacon = Bacon();
+bacon.a = "asdnjf";
+bacon.eat()();
