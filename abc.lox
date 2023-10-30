@@ -1,11 +1,9 @@
-class Bacon {
-  eat() {
-    return ()->{
-               println this.a;
-           };
-  }
+fun fib(n) {
+  if (n < 2) return n;
+  return fib(n - 1) + fib(n - 2);
 }
 
-var bacon = Bacon();
-bacon.a = "asdnjf";
-bacon.eat()();
+var before = clock();
+println fib(100);
+var after = clock();
+println after - before;

@@ -28,15 +28,18 @@ class Parser(private val tokens : List<Token>, private val allowExpression : Boo
             if(match(CLASS)) classDeclaration()
             else if (match(VAR)) varDeclaration()
             else if (match(FUN)) function("function")
-            else statement();
+            else statement()
         } catch (error : ParseError) {
-            synchronize();
+            synchronize()
             null;
         }
     }
 
     private fun classDeclaration() : Stmt {
         val className = consume(IDENTIFIER, "Expected identifier")
+        var superClass : Expr.Variable? = null
+        if(match(LESS))
+            superClass = Expr.Variable(consume(IDENTIFIER, "Expected Identifier after '<';"))
         consume(LEFT_BRACE, "Expected '{' before class body")
 
         val functions = ArrayList<Stmt.Function>()
@@ -44,9 +47,9 @@ class Parser(private val tokens : List<Token>, private val allowExpression : Boo
             functions.add(function("method") as Stmt.Function)
         }
 
-        consume(RIGHT_BRACE, "Expect '}' after class body.");
+        consume(RIGHT_BRACE, "Expect '}' after class body.")
 
-        return Stmt.Class(className, functions)
+        return Stmt.Class(className, functions, superClass)
     }
 
     private fun varDeclaration() : Stmt{
@@ -82,7 +85,7 @@ class Parser(private val tokens : List<Token>, private val allowExpression : Boo
         if(peek().type != RIGHT_PAREN){
             do{
                 if (params.size >= 255) {
-                    error(peek(), "Can't have more than 255 parameters.");
+                    error(peek(), "Can't have more than 255 parameters.")
                 }
 
                 params.add(consume(IDENTIFIER, "Expect parameter name."));
@@ -192,7 +195,7 @@ class Parser(private val tokens : List<Token>, private val allowExpression : Boo
     }
 
 
-    private fun expression() : Expr = assignment();
+    private fun expression() : Expr = assignment()
 
     private fun assignment(): Expr {
         val expr = comma()
@@ -322,10 +325,10 @@ class Parser(private val tokens : List<Token>, private val allowExpression : Boo
     private fun call(): Expr {
         var expr = primary()
         while(true) {
-            if (match(LEFT_PAREN)) {
-                expr = finishCall(expr);
+            expr = if (match(LEFT_PAREN)) {
+                finishCall(expr);
             } else if (match(DOT)) {
-                expr = Expr.Get(
+                Expr.Get(
                     obj = expr,
                     name = consume(IDENTIFIER, "Expect property name after '.'.")
                 )
@@ -382,6 +385,12 @@ class Parser(private val tokens : List<Token>, private val allowExpression : Boo
         if(match(NIL)){ return Expr.Literal(null) }
         if(match(NUMBER, STRING)){ return Expr.Literal(previous().literal) }
         if(match(THIS)){ return Expr.This(previous()) }
+        if(match(SUPER)){
+            val keyword = previous()
+            consume(DOT, "Expected a '.' after super")
+            val method = consume(IDENTIFIER, "Expected superclass method name")
+            return Expr.Super(keyword, method)
+        }
         if(match(IDENTIFIER)) { return Expr.Variable(previous()) }
 
         error(peek(), "Invalid value")

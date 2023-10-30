@@ -3,7 +3,6 @@ package com.loxinterpreter
 import com.loxinterpreter.data.Expr
 import com.loxinterpreter.data.Stmt
 import com.loxinterpreter.data.Token
-import java.lang.IllegalStateException
 import java.util.*
 import kotlin.collections.HashMap
 
@@ -11,10 +10,14 @@ enum class FunctionType{
     FUNCTION, METHOD , NONE
 }
 
+enum class ClassType{
+    CLASS, SUBCLASS, NONE
+}
+
 class Resolver(private val interpreter : Interpreter) : Expr.Visitor<Unit>, Stmt.Visitor<Unit> {
 
     private val scopes = Stack<HashMap<String, Boolean>>()
-    private val notUsed = Stack<HashMap<String, Token>>()
+    private var currClass = ClassType.NONE
 
     override fun visitBlock(stmt: Stmt.Block) {
         beginScope()
@@ -24,29 +27,16 @@ class Resolver(private val interpreter : Interpreter) : Expr.Visitor<Unit>, Stmt
 
     private fun endScope() {
         scopes.pop()
-        val vars = notUsed.pop()
-        for(value in vars.values){
-            warn(value, "Variable not used")
-        }
     }
 
     private fun beginScope() {
         scopes.push(HashMap())
-        notUsed.push(HashMap())
     }
 
     fun resolve(statements: List<Stmt>) {
-        notUsed.push(HashMap())
         for(stmt in statements){
             resolve(stmt)
         }
-        val nonUsed = notUsed.pop()
-
-        for(value in nonUsed.values){
-            warn(value, "Variable not used")
-        }
-
-        if(notUsed.isNotEmpty()) throw IllegalStateException("used stack should be empty")
     }
 
     private fun resolveBlock(statements : List<Stmt>){
@@ -111,17 +101,33 @@ class Resolver(private val interpreter : Interpreter) : Expr.Visitor<Unit>, Stmt
     }
 
     override fun visitClass(stmt: Stmt.Class) {
-        beginScope()
+        val enclosingClass = currClass
+        currClass = ClassType.CLASS
+
         declare(stmt.name)
+
+        if(stmt.superClass != null){
+            currClass = ClassType.SUBCLASS
+            beginScope()
+            scopes.peek()["super"] = true
+        }
+
+        beginScope()
         scopes.peek()["this"] = true
         for(method in stmt.methods){
             resolveFunction(method.expr, FunctionType.METHOD)
         }
 
-        notUsed.peek().remove(stmt.name.lexeme)
-
         define(stmt.name)
+
+        if(stmt.superClass?.name?.lexeme == stmt.name.lexeme){
+            error(stmt.superClass.name, "A class can't inherit itself")
+        }
         endScope()
+
+        if (stmt.superClass != null) endScope()
+
+        currClass = enclosingClass
     }
 
     override fun visitVar(stmt: Stmt.Var) {
@@ -140,7 +146,6 @@ class Resolver(private val interpreter : Interpreter) : Expr.Visitor<Unit>, Stmt
         if (!scopes.isEmpty()){
             scopes.peek()[name.lexeme] = false
         }
-        notUsed.peek()[name.lexeme] = name
     }
 
     override fun visitAssign(expr: Expr.Assign) {
@@ -184,12 +189,10 @@ class Resolver(private val interpreter : Interpreter) : Expr.Visitor<Unit>, Stmt
     private fun resolveLocal(expr: Expr, name: Token) {
         for(i in (0 until scopes.size).reversed()){
             if(scopes[i].containsKey(name.lexeme)){
-                notUsed[i+1].remove(name.lexeme)
                 interpreter.resolve(expr, scopes.size - 1 - i)
                 return
             }
         }
-        notUsed.first().remove(name.lexeme)
     }
 
     override fun visitFunction(expr: Expr.Function) {
@@ -200,9 +203,23 @@ class Resolver(private val interpreter : Interpreter) : Expr.Visitor<Unit>, Stmt
         resolve(expr.obj)
     }
 
-    override fun visitThis(expr: Expr.This) {
-        resolveLocal(expr, expr.keyword)
-    }
+    override fun visitThis(expr: Expr.This) =
+        if (currClass == ClassType.NONE) {
+            error(expr.keyword, "Can't use 'this' outside of a class.")
+        }else resolveLocal(expr, expr.keyword)
+
+    override fun visitSuper(expr: Expr.Super) =
+        if (currClass == ClassType.NONE) {
+            error(expr.keyword, "Can't use 'super' outside of a class.")
+        }
+        else if (currClass != ClassType.SUBCLASS) {
+            error(expr.keyword,
+            "Can't use 'super' in a class with no superclass.")
+        }
+        else{
+            resolveLocal(expr, expr.keyword)
+        }
+
 
     override fun visitSet(expr: Expr.Set) {
         resolve(expr.obj)

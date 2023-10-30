@@ -52,7 +52,7 @@ abstract class Stmt {
 		override fun <R> accept(visitor : Visitor<R>) : R = visitor.visitPrintLn(this)
 	}
 
-	class Class(val name : Token, val methods : List<Stmt.Function>, ) : Stmt() {
+	class Class(val name : Token, val methods : List<Stmt.Function>, val superClass : Expr.Variable?, ) : Stmt() {
 		override fun <R> accept(visitor : Visitor<R>) : R = visitor.visitClass(this)
 	}
 

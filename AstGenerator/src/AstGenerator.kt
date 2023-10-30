@@ -22,6 +22,7 @@ fun main(args : Array<String>) {
             "Function : List<Token> params, List<Stmt> body",
             "Get      : Expr obj, Token name",
             "This     : Token keyword",
+            "Super    : Token keyword, Token method",
             "Set      : Expr obj, Token name, Expr value",
             "Call     : Expr callee, Token paren, List<Expr> arguments",
         )
@@ -37,7 +38,7 @@ fun main(args : Array<String>) {
             "Expression : Expr expression",
             "Print      : Expr expression",
             "PrintLn    : Expr? expression",
-            "Class      : Token name, List<Stmt.Function> methods",
+            "Class      : Token name, List<Stmt.Function> methods, Expr.Variable? superClass",
             "Var        : Token name, Expr? initializer"
         )
     )

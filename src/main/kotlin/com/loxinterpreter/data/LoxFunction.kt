@@ -5,8 +5,8 @@ import com.loxinterpreter.Interpreter
 import com.loxinterpreter.LoxCallable
 import com.loxinterpreter.Return
 
-class LoxFunction(private val declaration : Expr.Function, private val closure : Environment, val name : Token? = null)
-    : LoxCallable {
+class LoxFunction(private val declaration : Expr.Function, private val closure : Environment, val name : Token? = null,
+                  private val isInitializer : Boolean = false) : LoxCallable {
 
     override val arity: Int
         get() = declaration.params.size
@@ -22,6 +22,8 @@ class LoxFunction(private val declaration : Expr.Function, private val closure :
         }catch (returnVal : Return){
             return returnVal.value
         }
+
+        if(isInitializer) return closure.getThis()
         return null
     }
 

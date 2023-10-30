@@ -55,6 +55,10 @@ class RPNPrinter : Expr.Visitor<String> {
         TODO("Not yet implemented")
     }
 
+    override fun visitSuper(expr: Expr.Super): String {
+        TODO("Not yet implemented")
+    }
+
     override fun visitSet(expr: Expr.Set): String {
         TODO("Not yet implemented")
     }

@@ -38,6 +38,24 @@ class Environment(var enclosing : Environment? = null){
 
     }
 
+    fun getThis() : Any?{
+        if(variables.containsKey("this")) {
+            return variables["this"]
+        }
+
+        return if(enclosing != null) enclosing!!.getThis()
+        else
+            throw RuntimeError(
+                null,
+                "There is no 'this' outside of a class"
+            )
+    }
+
+    fun getThisAt(distance: Int, name : String) : Any? {
+        return ancestor(distance).getThis()
+    }
+
+
     fun getAt(distance: Int, name : Token) : Any?
         = ancestor(distance).get(name)
 

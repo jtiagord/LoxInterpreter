@@ -22,7 +22,7 @@ class Interpreter : Expr.Visitor<Any?>, Stmt.Visitor<Unit> {
             override fun call(interpreter: Interpreter, arguments: List<Any?>): Any
                 = (System.currentTimeMillis() / 1000.0)
 
-            override fun toString(): String = "<native fn>";
+            override fun toString(): String = "<native fn>"
         }
         global.define("clock", function)
     }
@@ -35,6 +35,7 @@ class Interpreter : Expr.Visitor<Any?>, Stmt.Visitor<Unit> {
         }catch (ex : RuntimeError){
             runtimeError(ex)
         }
+
     }
 
     fun executeBlock(stmts: List<Stmt>, env: Environment){
@@ -148,8 +149,8 @@ class Interpreter : Expr.Visitor<Any?>, Stmt.Visitor<Unit> {
                 checkNumberOperands(expr.operator, left, right)
                 return left as Double <= right as Double
             }
-            TokenType.BANG_EQUAL -> return !isEqual(left, right);
-            TokenType.EQUAL_EQUAL -> return isEqual(left, right);
+            TokenType.BANG_EQUAL -> return !isEqual(left, right)
+            TokenType.EQUAL_EQUAL -> return isEqual(left, right)
             TokenType.COMMA -> return right
             else -> {
                 null
@@ -243,7 +244,22 @@ class Interpreter : Expr.Visitor<Any?>, Stmt.Visitor<Unit> {
         return lookUpVariable(expr.keyword, expr)
     }
 
-    override fun visitSet(expr: Expr.Set): Any? {
+    override fun visitSuper(expr: Expr.Super): Any {
+        val distance = locals[expr]!!
+        val superClass = currEnv.getAt(distance, expr.keyword) as LoxClass
+
+        val obj = currEnv.getThisAt(distance - 1, "this") as LoxInstance
+
+        val method = superClass.findMethod(expr.method.lexeme)
+            ?: throw RuntimeError(
+                expr.method,
+                "Undefined property '" + expr.method.lexeme + "'."
+            )
+
+        return method.bind(obj)
+    }
+
+    override fun visitSet(expr: Expr.Set): Any {
         val obj = evaluate(expr.obj)
 
         if(obj is LoxInstance){
@@ -287,13 +303,35 @@ class Interpreter : Expr.Visitor<Any?>, Stmt.Visitor<Unit> {
     }
 
     override fun visitClass(stmt: Stmt.Class) {
+
+        var superClass : Any? = null
+
+        if(stmt.superClass != null){
+            superClass = evaluate(stmt.superClass)
+            if(superClass !is LoxClass){
+                throw RuntimeError(stmt.superClass.name, "Superclass must be a class")
+            }
+        }
+
         currEnv.define(stmt.name.lexeme, null)
 
+        if(stmt.superClass != null){
+            currEnv = Environment(currEnv)
+            currEnv.define("super", superClass)
+        }
+
         val hm = HashMap<String, LoxFunction>()
+
         for(function in stmt.methods){
             hm[function.name.lexeme] = LoxFunction(function.expr, currEnv, function.name)
         }
-        val klass = LoxClass(stmt.name.lexeme, hm)
+
+        val klass = LoxClass(stmt.name.lexeme, hm, superClass as LoxClass?)
+
+        if (superClass != null) {
+            currEnv = currEnv.enclosing!!
+        }
+
         currEnv.assign(stmt.name, klass)
     }
 

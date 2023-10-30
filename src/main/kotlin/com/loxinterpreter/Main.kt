@@ -27,7 +27,7 @@ fun main(args : Array<String>){
 
 
 fun runtimeError(error: RuntimeError) {
-    System.err.println("[Line ${error.token.line}] ${error.message}");
+    System.err.println("[Line ${error.token?.line ?: 0}] ${error.message}")
     hadRuntimeError = true
 }
 fun runPrompt() {
@@ -46,7 +46,7 @@ fun runFile(file : String) {
     val input = Files.readAllBytes(Path(file))
     run(String(input, Charset.defaultCharset()), false)
     if (hadError) exitProcess(65)
-    if (hadRuntimeError) exitProcess(70);
+    if (hadRuntimeError) exitProcess(70)
 }
 
 fun run(input : String, allowExpression : Boolean){
@@ -59,12 +59,11 @@ fun run(input : String, allowExpression : Boolean){
     val statements = parser.parse()
 
     if(hadError) return
-
     val interpreter = Interpreter()
-
     val resolver = Resolver(interpreter)
     resolver.resolve(statements)
 
+    if(hadError) return
     interpreter.interpret(statements)
 }
 
@@ -77,17 +76,17 @@ fun error(line: Int, message: String) {
 
 fun error(token : Token, message : String){
     if (token.type == TokenType.EOF) {
-        report(token.line, " at end", message);
+        report(token.line, " at end", message)
     } else {
-        report(token.line, " at '" + token.lexeme + "'", message);
+        report(token.line, " at '" + token.lexeme + "'", message)
     }
 }
 
 fun warn(token : Token, message : String){
     if (token.type == TokenType.EOF) {
-        warning(token.line, " at end", message);
+        warning(token.line, " at end", message)
     } else {
-        warning(token.line, " at '" + token.lexeme + "'", message);
+        warning(token.line, " at '" + token.lexeme + "'", message)
     }
 }
 
